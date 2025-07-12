@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Put, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, UpdateUserDto } from './dto/auth.dto';
@@ -92,18 +92,19 @@ export class AuthController {
   }
 
   /**
-   * Update user information (Admin only)
-   * Allows administrators to update user details
+   * Update user information (All authenticated users)
+   * Allows any authenticated user to update their own information
+   * Useful for password recovery and profile updates
    * 
    * @param id - User ID to update
    * @param updateUserDto - User data to update
+   * @param req - Request object containing authenticated user
    * @returns Updated user object (without password)
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard)
   @Put('users/:id')
-  @Roles('admin', 'super_admin')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update user (Admin only)' })
+  @ApiOperation({ summary: 'Update user (All authenticated users)' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ 
     status: 200, 
@@ -128,11 +129,23 @@ export class AuthController {
   })
   @ApiResponse({ status: 400, description: 'User not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only update own profile' })
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @Request() req,
   ) {
+    // Check if user is updating their own profile or has admin/super_admin role
+    const currentUser = req.user;
+    const isOwnProfile = currentUser.id === id;
+    const isAdmin = currentUser.roles && currentUser.roles.includes('admin');
+    const isSuperAdmin = currentUser.roles && currentUser.roles.includes('super_admin');
+
+    // Allow if user is updating their own profile or has admin/super_admin role
+    if (!isOwnProfile && !isAdmin && !isSuperAdmin) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
+
     return this.authService.updateUser(id, updateUserDto);
   }
 
@@ -175,19 +188,22 @@ export class AuthController {
   }
 
   /**
-   * Get all users (Admin only)
-   * Returns a list of all users in the system with their roles
+   * Get all users (Admin and Super Admin only)
+   * Returns a list of users based on the authenticated user's role:
+   * - Admin: Can see local and admin users (but not super_admin users)
+   * - Super Admin: Can see all users (local, admin, and super_admin)
    * 
-   * @returns Array of all user objects (without passwords) with roles
+   * @param req - Request object containing authenticated user
+   * @returns Array of user objects (without passwords) with roles
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('users')
   @Roles('admin', 'super_admin')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all users (Admin only)' })
+  @ApiOperation({ summary: 'Get all users (Admin and Super Admin only)' })
   @ApiResponse({ 
     status: 200, 
-    description: 'List of all users retrieved successfully',
+    description: 'List of users retrieved successfully',
     schema: {
       type: 'array',
       items: {
@@ -212,7 +228,16 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
-  async getAllUsers() {
-    return this.authService.findAll();
+  async getAllUsers(@Request() req) {
+    const currentUser = req.user;
+    const isSuperAdmin = currentUser.roles && currentUser.roles.includes('super_admin');
+    
+    // If super admin, return all users
+    if (isSuperAdmin) {
+      return this.authService.findAll();
+    }
+    
+    // If admin, return only local and admin users (exclude super_admin users)
+    return this.authService.findUsersByRoles(['local', 'admin']);
   }
 } 

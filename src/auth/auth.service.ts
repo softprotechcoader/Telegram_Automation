@@ -125,6 +125,60 @@ export class AuthService {
   }
 
   /**
+   * Find all users with their roles
+   * Retrieves all users in the system with their role information
+   * 
+   * @returns Array of user objects with roles (passwords excluded)
+   */
+  async findAll() {
+    const users = await this.userRepository.find();
+    
+    // Get roles for each user
+    const usersWithRoles = await Promise.all(
+      users.map(async (user) => {
+        const { password: _, ...userWithoutPassword } = user;
+        const roles = await this.getUserRoles(user.id);
+        return { ...userWithoutPassword, roles };
+      })
+    );
+    
+    return usersWithRoles;
+  }
+
+  /**
+   * Find users by specific roles
+   * Retrieves users that have any of the specified roles
+   * 
+   * @param roles - Array of role strings to filter by
+   * @returns Array of user objects with roles (passwords excluded)
+   */
+  async findUsersByRoles(roles: string[]) {
+    const allUsers = await this.userRepository.find();
+    const filteredUsers = [];
+
+    for (const user of allUsers) {
+      const userRoles = await this.getUserRoles(user.id);
+      
+      // Check if user has any of the specified roles
+      const hasRequiredRole = roles.some(role => userRoles.includes(role));
+      
+      // Additional check: If we're filtering for admin users (not super_admin),
+      // exclude any users who have super_admin role
+      const isSuperAdminUser = userRoles.includes('super_admin');
+      const isAdminOnlyRequest = roles.includes('admin') && !roles.includes('super_admin');
+      
+      // Include user if they have required roles AND
+      // either it's not an admin-only request OR the user is not a super_admin
+      if (hasRequiredRole && (!isAdminOnlyRequest || !isSuperAdminUser)) {
+        const { password: _, ...userWithoutPassword } = user;
+        filteredUsers.push({ ...userWithoutPassword, roles: userRoles });
+      }
+    }
+    
+    return filteredUsers;
+  }
+
+  /**
    * Update user information
    * Allows updating user details and password
    * 
@@ -174,27 +228,6 @@ export class AuthService {
     // Return user without password and with roles
     const { password: _, ...result } = user;
     return { ...result, roles: userRoles };
-  }
-
-  /**
-   * Find all users with their roles
-   * Retrieves all users in the system with their role information
-   * 
-   * @returns Array of user objects with roles (passwords excluded)
-   */
-  async findAll() {
-    const users = await this.userRepository.find();
-    
-    // Get roles for each user
-    const usersWithRoles = await Promise.all(
-      users.map(async (user) => {
-        const { password: _, ...userWithoutPassword } = user;
-        const roles = await this.getUserRoles(user.id);
-        return { ...userWithoutPassword, roles };
-      })
-    );
-    
-    return usersWithRoles;
   }
 
   /**

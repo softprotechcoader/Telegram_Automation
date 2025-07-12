@@ -1,0 +1,52 @@
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "roles": ["local"]
+}
+
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123",
+  "firstName": "Admin",
+  "lastName": "User",
+  "roles": ["local", "admin"]
+}
+
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "superadmin@example.com",
+  "password": "super123",
+  "firstName": "Super",
+  "lastName": "Admin",
+  "roles": ["local", "admin", "super_admin"]
+}
+
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+GET http://localhost:3000/auth/profile
+Authorization: Bearer YOUR_JWT_TOKEN
+
+PUT http://localhost:3000/auth/users/USER_ID
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+
+{
+  "firstName": "Updated",
+  "lastName": "Name"
+}
