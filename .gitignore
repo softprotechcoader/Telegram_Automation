@@ -1,0 +1,43 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Nest CLI cache
+nestjs-cli.json
+
+# Optional: coverage reports
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: Ignore SQLite database files (if applicable)
+*.sqlite
+*.db
+
+# Ignore compiled files (if using webpack manually)
+webpack.config.js
