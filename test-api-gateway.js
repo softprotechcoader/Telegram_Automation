@@ -1,8 +1,33 @@
+/**
+ * API Gateway Test Script
+ * 
+ * This script provides automated testing for the API Gateway functionality.
+ * It tests all major endpoints and features to ensure the gateway is working
+ * correctly and can properly route requests to microservices.
+ * 
+ * Test Coverage:
+ * - Health check endpoints
+ * - Swagger documentation accessibility
+ * - Authentication flow through gateway
+ * - Protected endpoint access
+ * - Error handling for invalid requests
+ * 
+ * Usage:
+ * - Run with: node test-api-gateway.js
+ * - Requires both API Gateway and Auth Service to be running
+ * - Provides detailed pass/fail results for each test
+ */
+
 const axios = require('axios');
 
-const API_GATEWAY_URL = 'http://localhost:3001';
-const AUTH_SERVICE_URL = 'http://localhost:3000';
+// Configuration for testing
+const API_GATEWAY_URL = 'http://localhost:3001';  // API Gateway URL
+const AUTH_SERVICE_URL = 'http://localhost:3000';  // Auth Service URL
 
+/**
+ * Main test function for API Gateway
+ * Runs comprehensive tests on all gateway functionality
+ */
 async function testApiGateway() {
   console.log('🧪 Testing API Gateway...\n');
 
@@ -29,6 +54,7 @@ async function testApiGateway() {
     // Test 4: Gateway Auth Routing
     console.log('\n4. Testing Gateway Auth Routing...');
     try {
+      // Test login through gateway (routes to auth service)
       const loginResponse = await axios.post(`${API_GATEWAY_URL}/gateway/auth/login`, {
         email: 'john.doe@example.com',
         password: 'Admin@123'
@@ -62,6 +88,7 @@ async function testApiGateway() {
       }
     }
 
+    // Print comprehensive test results
     console.log('\n🎉 API Gateway Testing Completed!');
     console.log('\n📋 Summary:');
     console.log('- Health Check: ✅');
@@ -70,6 +97,7 @@ async function testApiGateway() {
     console.log('- Gateway Routing: ✅');
     console.log('- Error Handling: ✅');
     
+    // Display access points for manual testing
     console.log('\n🌐 Access Points:');
     console.log(`- API Gateway: ${API_GATEWAY_URL}`);
     console.log(`- Swagger Docs: ${API_GATEWAY_URL}/api`);
